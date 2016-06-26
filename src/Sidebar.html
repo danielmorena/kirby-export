@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+    body, html {
+      height: 100%;
+    }
+    #main {
+      padding: 20px
+    }
+    #error-toast {
+      -webkit-box-shadow: 1px 2px 10px 0px rgba(0,0,0,0.2);
+      -moz-box-shadow: 1px 2px 10px 0px rgba(0,0,0,0.2);
+      box-shadow: 1px 2px 10px 0px rgba(0,0,0,0.2);
+      padding: 10px;
+      border-radius: 3px;
+      border: 1px solid rgba(0,0,0,0.3);
+      display: none;
+      color: red;
+    }
+    #caption-text {
+      width: 100%;
+    }
+    hr {
+      border: 0;
+      margin: 16px -20px;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .button-action {
+        -webkit-box-shadow: none;
+        -moz-box-shadow: none;
+        box-shadow: none;
+        background-color: #4d90fe;
+        background-image: -webkit-linear-gradient(top,#4d90fe,#4787ed);
+        background-image: -moz-linear-gradient(top,#4d90fe,#4787ed);
+        background-image: -ms-linear-gradient(top,#4d90fe,#4787ed);
+        background-image: -o-linear-gradient(top,#4d90fe,#4787ed);
+        background-image: linear-gradient(top,#4d90fe,#4787ed);
+        border: 1px solid #3079ed;
+        color: #fff;
+    }
+    .button-action:hover {
+      -webkit-box-shadow: none;
+      -moz-box-shadow: none;
+      box-shadow: none;
+      background-color: #357ae8;
+      background-image: -webkit-linear-gradient(top,#4d90fe,#357ae8);
+      background-image: -moz-linear-gradient(top,#4d90fe,#357ae8);
+      background-image: -ms-linear-gradient(top,#4d90fe,#357ae8);
+      background-image: -o-linear-gradient(top,#4d90fe,#357ae8);
+      background-image: linear-gradient(top,#4d90fe,#357ae8);
+      border: 1px solid #2f5bb7;
+      border-bottom-color: #2f5bb7;
+      color: #fff;
+    }
+    .tableParams td {
+      border: none;
+      padding-right: 5px;
+      padding-bottom: 5px;
+      padding-top: 0px;
+    }
+    </style>
+  </head>
+  <body>
+  
+    <div id="main">
+    
+    <div class=block>
+      <button id="run" onclick="insertTable()">Insert MetaInfo Table</button>
+    </div>
+        
+    <div class="block">
+      <h4>Local Domain:</h4>
+      <input type="text" name="local-domain" placeholder="example.com" id="local-domain">
+    </div>
+    
+    
+    
+    
+    
+    <div class="block">
+      <h4>Override Outputparameters:</h4>      
+      <table class="tableParams">
+        <tr><td>Heading 1:  </td><td><input type="text" id="h1" value="#"></td></tr>
+        <tr><td>Heading 2:  </td><td><input type="text" id="h2" value="##"></td></tr>
+        <tr><td>Heading 3:  </td><td><input type="text" id="h3" value="###"></td></tr>
+        <tr><td>Heading 4:  </td><td><input type="text" id="h4" value="####"></td></tr>
+        <tr><td>Heading 5:  </td><td><input type="text" id="h5" value="#####"></td></tr>
+        <tr><td>QuoteStyle: </td><td><input type="text" id="quoteStyle" value="color:#F0AC57 style:center"></td></tr>
+      </table>
+    </div>
+    
+    <div class="block">
+    <h4>Save Settings:</h4>
+      <input type="checkbox" id="saveScript" onclick="toggleSaveBtn()">Save Defaults<br>
+      <input type="checkbox" id="saveDoc" onclick="toggleSaveBtn()">Save for Document<br>
+      
+    </div>
+  
+   <div class="block">
+       <button type="submit" id="saveBtn" onclick="savePrefs()" disabled>Save Settings</button>
+      <button class="button-action" id="run" onclick="runTransform()">Export</button>
+    </div>
+    
+    <div class="block">
+      <div id="error-toast"></div>
+    </div>
+  
+    
+    </div>
+    
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js">
+    </script>
+    <script>    
+      $(function() {
+        // look for exisitng prefs
+        getScriptPrefs();
+        getDocPrefs();
+        // get new export parameters every 30 minutes to refresh oauthtoken
+        getExportParams();
+        setInterval(getExportParams, 1000 * 60 * 30);
+      });
+      
+      
+      function getExportParams() {
+        google.script.run
+          .withSuccessHandler(setTransformUrl)
+          .withUserObject(this)
+          .getExportParams();
+      }
+      
+      function setTransformUrl(params) {
+        baseUrl = "http://pugo.co/pugo";
+        transformUrl = baseUrl + "/convert?" + $.param(params) + "&mode=md";
+      }
+      
+      function setXslParams() {
+        xslParams = {
+          xslParam_h1: $('#h1').val(),
+          xslParam_h2: $('#h2').val(),
+          xslParam_h3: $('#h3').val(),
+          xslParam_h4: $('#h4').val(),
+          xslParam_h5: $('#h5').val(),
+          xslParam_quoteStyle: $('#quoteStyle').val()
+        };
+        
+        var localDomain = $('#local-domain').val();
+        if (localDomain) {
+          xslParams.xslParam_localDomain = localDomain;
+        }
+        
+        transformUrl = transformUrl + "&" + $.param(xslParams);
+      }
+      
+      function runTransform() {
+        setXslParams();
+        window.open(transformUrl, '_blank');
+      }
+      
+      function getDocPrefs() {
+        google.script.run
+          .withSuccessHandler(readPreferences)
+          .withUserObject(this)
+          .getDocumentProperties();
+      }
+      
+      function getScriptPrefs() {
+        google.script.run
+          .withSuccessHandler(readPreferences)
+          .withUserObject(this)
+          .getScriptProperties();
+      }
+      
+      function readPreferences(prefs) {
+        if (prefs.LOCAL_DOMAIN) { $('#local-domain').val(prefs.LOCAL_DOMAIN); }
+        if (prefs.H1) { $('#h1').val(prefs.H1); }
+        if (prefs.H2) { $('#h2').val(prefs.H2); }
+        if (prefs.H3) { $('#h3').val(prefs.H3); }
+        if (prefs.H4) { $('#h4').val(prefs.H4); }
+        if (prefs.H5) { $('#h5').val(prefs.H5); }
+        if (prefs.QUOTE_STYLE) { $('#quoteStyle').val(prefs.QUOTE_STYLE); }
+      }
+      
+      function savePrefs() {
+        showToast("Saving Settings...");
+        prefs = {
+          LOCAL_DOMAIN: $('#local-domain').val(),
+          H1: $('#h1').val(),
+          H2: $('#h2').val(),
+          H3: $('#h3').val(),
+          H4: $('#h4').val(),
+          H5: $('#h5').val(),
+          QUOTE_STYLE: $('#quoteStyle').val()
+        };
+        
+        if ($('#saveScript').is(':checked')) {         
+          google.script.run
+            .withFailureHandler(showToast)
+            .withUserObject(this)
+            .saveScriptProperties(prefs);
+        }
+        
+        if ($('#saveDoc').is(':checked')) {
+          google.script.run
+            .withFailureHandler(showToast)
+            .withUserObject(this)
+            .saveDocumentProperties(prefs);
+        }
+      }
+      
+      function insertTable() {
+        google.script.run
+          .withFailureHandler(showToast)
+          .withUserObject(this)
+          .insertMetaInfoTable();
+      }      
+      
+      function toggleSaveBtn() {
+        if($('#saveScript').is(':checked') || $('#saveDoc').is(':checked')) {
+          $('#saveBtn').removeAttr('disabled');
+        } else {
+          $('#saveBtn').attr('disabled', true);
+        }
+      }
+      
+      function showToast(msg) {
+        $('#error-toast').html( msg ).fadeIn(200).delay(5000).fadeOut(300);
+      }
+    </script>
+  </body>
+</html>
