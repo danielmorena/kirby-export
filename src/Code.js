@@ -66,17 +66,6 @@ function getOauthToken() {
   return ScriptApp.getOAuthToken();
 }
 
-
-function getAuthStatus() {
-  var authInfo = ScriptApp.getAuthorizationInfo(ScriptApp.AuthMode.FULL);
-  var status = authInfo.getAuthorizationStatus()
-  
-  if (status == ScriptApp.AuthorizationStatus.REQUIRED)
-    return "AUTH REQUIRED";
-  else 
-    return "AUTHORIZED";
-}
-
 function getExportLink() {
   var file = Drive.Files.get(getId());
   return file['exportLinks']['text/html'];
